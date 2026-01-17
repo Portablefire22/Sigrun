@@ -33,14 +33,20 @@ public class Camera
 
     private Vector2 _lastMouse;
     
-    
-    private Vector3 _direction;
     private Vector3 _front;
     private Vector3 _up;
     private Vector3 _right;
     private Vector3 _worldUp;
     
     public Matrix4x4 ViewMatrix => Matrix4x4.CreateLookAt(Position, Position + _front, _up);
+    public Matrix4x4 GetProjectionMatrix(float aspectRatio)
+    {
+        return Matrix4x4.CreatePerspectiveFieldOfView(
+                1, 
+                aspectRatio,
+                0.001f,
+                1000000000f);
+    }
 
     private void UpdateCameraVectors()
     {
@@ -100,7 +106,7 @@ public class Camera
                 break;
             case Key.ShiftLeft:
             case Key.ShiftRight:
-                Position += _up * velocity;
+                Position -= _up * velocity;
                 break;
         }
         _logger.LogDebug($"Pos: {Position.X} {Position.Y} {Position.Z}");

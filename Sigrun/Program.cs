@@ -177,13 +177,9 @@ class Program
         _ticks += TimeHandler.DeltaTime * 1000f;
         _commandList.Begin();
       
-        var projectionMatrix = 
-            Matrix4x4.CreatePerspectiveFieldOfView(
-                1, 
-                (float)(_window.Width)/_window.Height,
-                0.001f,
-                1000000000f);
-        _commandList.UpdateBuffer(_projectionBuffer, 0, projectionMatrix);
+       
+        _commandList.UpdateBuffer(_projectionBuffer, 0, 
+            _mainCamera.GetProjectionMatrix((float)_window.Width/_window.Height));
         
         _commandList.UpdateBuffer(_viewBuffer, 0, _mainCamera.ViewMatrix);
         // _commandList.UpdateBuffer(_viewBuffer, 0, Matrix4x4.CreateLookAt(_mainCamera.Position, Vector3.Zero, Vector3.UnitY));
