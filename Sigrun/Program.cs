@@ -113,11 +113,11 @@ class Program
 
         var loader = new RMeshLoader();
         var m = loader.LoadFromFile(
-            "Z:\\SteamLibrary\\steamapps\\common\\SCP Containment Breach Multiplayer\\GFX\\map\\173.rmesh", "008");
+            "Assets/Models/173.rmesh", "008");
         _models = new List<Model.Model>();
         _models.Add(m); 
         m = loader.LoadFromFile(
-            "Z:\\SteamLibrary\\steamapps\\common\\SCP Containment Breach Multiplayer\\GFX\\map\\4tunnels.rmesh", "008");
+            "Assets/Models/4tunnels.rmesh", "008");
         m.Position -= Vector3.UnitY * 20f;
         _models.Add(m);
         _worldBuffer = factory.CreateBuffer(new BufferDescription(80, BufferUsage.UniformBuffer));
