@@ -161,7 +161,7 @@ public class RMeshLoader
     private void ReadTextureObjectData(string relativePath)
     {
         var vertexCount = ReadInt32();
-        var textureIndex = (uint)_texturePaths.IndexOf(relativePath);
+        var textureIndex = _texturePaths.IndexOf(relativePath);
 
         var vertices = new MeshVertex[vertexCount];
         _textureVertices.EnsureCapacity(_textureVertices.Count + vertexCount);

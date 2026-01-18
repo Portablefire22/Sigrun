@@ -9,7 +9,7 @@ public class MeshVertex
     public int Index { get; set; }
     public Vector2 LightmapUv { get; set; }
     
-    public uint TextureIndex { get; set; }
+    public int TextureIndex { get; set; }
     
     public byte Red { get; set; }
     public byte Green { get; set; }

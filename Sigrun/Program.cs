@@ -107,10 +107,6 @@ class Program
     {
         var factory = _graphicsDevice.ResourceFactory;
 
-        // var loader = new ObjLoader();
-        // var m = loader.LoadFromFile("C:\\Users\\blake\\Downloads\\cube.txt");
-        // var m = loader.LoadFromFile("D:\\scp\\Converted\\source\\source\\4tunnels.obj");
-
         var loader = new RMeshLoader();
         var m = loader.LoadFromFile(
             "Assets/Models/173.rmesh", "008");
@@ -120,15 +116,13 @@ class Program
             "Assets/Models/4tunnels.rmesh", "008");
         m.Position -= Vector3.UnitY * 20f;
         _models.Add(m);
-        _worldBuffer = factory.CreateBuffer(new BufferDescription(80, BufferUsage.UniformBuffer));
-        
-        
+        _worldBuffer = factory.CreateBuffer(new BufferDescription(64, BufferUsage.UniformBuffer));
 
         var vertexLayout = new VertexLayoutDescription(new VertexElementDescription("Position",
             VertexElementSemantic.TextureCoordinate,
             VertexElementFormat.Float3), new VertexElementDescription("Texture Coordinate",
             VertexElementSemantic.TextureCoordinate,
-            VertexElementFormat.Float2));
+            VertexElementFormat.Float2), new VertexElementDescription("Texture Index", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Int1));
 
         var vertexCode = File.ReadAllText("Shader/shader.vert").ReplaceLineEndings();
         var fragmentCode= File.ReadAllText("Shader/shader.frag").ReplaceLineEndings();
@@ -183,11 +177,6 @@ class Program
             _mainCamera.GetProjectionMatrix((float)_window.Width/_window.Height));
         
         _commandList.UpdateBuffer(_viewBuffer, 0, _mainCamera.ViewMatrix);
-        // _commandList.UpdateBuffer(_viewBuffer, 0, Matrix4x4.CreateLookAt(_mainCamera.Position, Vector3.Zero, Vector3.UnitY));
-        // Matrix4x4 rotation =
-        //     Matrix4x4.CreateFromAxisAngle(Vector3.UnitY, (_ticks / 1000f))
-        //     * Matrix4x4.CreateFromAxisAngle(Vector3.UnitX, 0);
-        // _commandList.UpdateBuffer(_worldBuffer, 0, ref rotation); 
         
         _commandList.SetFramebuffer(_graphicsDevice.SwapchainFramebuffer);
         _commandList.ClearColorTarget(0, RgbaFloat.Black);
@@ -199,10 +188,10 @@ class Program
         _imGuiRenderer.Update(TimeHandler.DeltaTime, _inputSnapshot);
 
         ImGui.Begin("Information");
+        ImGui.Text($"FPS: {TimeHandler.FramesPerSecond}");
+        ImGui.Text($"FrameTime: {TimeHandler.FrameTime}ms");
         ImGui.Text($"Camera Pos: {_mainCamera.Position.X} {_mainCamera.Position.Y} {_mainCamera.Position.Z}");
         ImGui.Text($"Num of Meshes to render: {_models.Count}");
-        
-
         
         DrawObjects();
         
@@ -224,8 +213,7 @@ class Program
             model.Scale = 0.005f;
             
             objectData.ModelMatrix = Matrix4x4.CreateTranslation((Vector3)model.Position);
-            objectData.ModelColour = new Vector4(i / _models.Count, 1, 0, 1);
-            
+
             _commandList.UpdateBuffer(_worldBuffer, 0, ref objectData); 
 
             _vertexBuffer =
@@ -235,7 +223,8 @@ class Program
             var vertexArray = new VertexPositionTexture[model.Mesh.Vertices.Length];
             for (int j = 0; j < vertexArray.Length; j++)
             {
-                vertexArray[j] = new VertexPositionTexture(model.Mesh.Vertices[j].Position * model.Scale, new Vector2());
+                var vert = model.Mesh.Vertices[j];
+                vertexArray[j] = new VertexPositionTexture(vert.Position * model.Scale, new Vector2(), vert.TextureIndex);
             }
             
             _graphicsDevice.UpdateBuffer(_vertexBuffer, 0, vertexArray);
@@ -265,7 +254,7 @@ class Program
 
 struct VertexPositionTexture
 {
-    public const uint SizeInBytes = 20;
+    public const uint SizeInBytes = 24;
     public float PosX;
     public float PosY;
     public float PosZ;
@@ -273,12 +262,15 @@ struct VertexPositionTexture
     public float TexU;
     public float TexV;
 
-    public VertexPositionTexture(Vector3 pos, Vector2 uv)
+    public int TexIndex;
+
+    public VertexPositionTexture(Vector3 pos, Vector2 uv, int texIndex)
     {
         PosX = pos.X;
         PosY = pos.Y;
         PosZ = pos.Z;
         TexU = uv.X;
         TexV = uv.Y;
+        TexIndex = texIndex;
     }
 }
