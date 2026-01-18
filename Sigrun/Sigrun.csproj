@@ -11,6 +11,7 @@
       <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.2" />
       <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.2" />
       <PackageReference Include="Veldrid" Version="4.9.0" />
+      <PackageReference Include="Veldrid.ImGui" Version="5.89.2-ga121087cad" />
       <PackageReference Include="Veldrid.SDL2" Version="4.9.0" />
       <PackageReference Include="Veldrid.SPIRV" Version="1.0.15" />
       <PackageReference Include="Veldrid.StartupUtilities" Version="4.9.0" />

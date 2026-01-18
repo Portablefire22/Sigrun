@@ -1,7 +1,9 @@
 ﻿using System.Numerics;
 using System.Text;
+using ImGuiNET;
 using Microsoft.Extensions.Logging;
 using Sigrun.Logging;
+using Sigrun.Model;
 using Sigrun.Model.Loader;
 using Sigrun.Player;
 using Sigrun.Time;
@@ -23,15 +25,22 @@ class Program
     private static DeviceBuffer _projectionBuffer;
     private static DeviceBuffer _viewBuffer;
     private static DeviceBuffer _worldBuffer;
+    private static DeviceBuffer _objectInfoBuffer;
     private static ResourceSet _projViewSet;
     private static ResourceSet _worldSet;
-
+    private static ResourceSet _objectInfoSet;
+    
     private static uint _indexCount;
+
+    private static ImGuiRenderer _imGuiRenderer;
     
     private static Shader[] _shaders;
     private static Pipeline _pipeline;
 
+    private static List<Model.Model> _models;
+
     private static float _ticks;
+    private static InputSnapshot _inputSnapshot;
     
     private static Sdl2Window _window;
     
@@ -64,17 +73,21 @@ class Program
         _window.MouseMove += _mainCamera.OnMouseMove;
         _window.KeyDown += _mainCamera.OnKeyDown;
 
-        
+       
         _window.FocusGained += OnFocusGained;
         _window.FocusLost += OnFocusLost;
 
-      
+        _window.Resized += () =>
+        {
+            _imGuiRenderer.WindowResized(_window.Width, _window.Height);
+            _graphicsDevice.MainSwapchain.Resize((uint)_window.Width, (uint)_window.Height);
+        };
         
         
         while (_window.Exists)
         {
             TimeHandler.UpdateDeltaTime();
-            _window.PumpEvents();
+            _inputSnapshot = _window.PumpEvents();
             Draw();
         }
     }
@@ -94,36 +107,22 @@ class Program
     {
         var factory = _graphicsDevice.ResourceFactory;
 
-        var loader = new ObjLoader();
+        // var loader = new ObjLoader();
         // var m = loader.LoadFromFile("C:\\Users\\blake\\Downloads\\cube.txt");
-        var m = loader.LoadFromFile("D:\\scp\\Converted\\source\\source\\4tunnels.obj");
+        // var m = loader.LoadFromFile("D:\\scp\\Converted\\source\\source\\4tunnels.obj");
 
-        var v = new List<VertexPositionTexture>();
-        foreach (var vert in m.Vertices)
-        {
-            v.Add(new VertexPositionTexture(vert.Position/100, vert.Uv));
-        }
-
-        // v = new List<VertexPositionTexture>()
-        // {
-        //     new VertexPositionTexture(new Vector3(-20f, -20f, 1), new Vector2(0, 0)),
-        //     new VertexPositionTexture(new Vector3(20f, -20f, 1), new Vector2(0, 0)),
-        //     new VertexPositionTexture(new Vector3(0, 20f, 1), new Vector2(0, 0)),
-        // };
-        //
-        // m.Indices = new ushort[] { 0, 1, 2 };
+        var loader = new RMeshLoader();
+        var m = loader.LoadFromFile(
+            "Z:\\SteamLibrary\\steamapps\\common\\SCP Containment Breach Multiplayer\\GFX\\map\\173.rmesh", "008");
+        _models = new List<Model.Model>();
+        _models.Add(m); 
+        m = loader.LoadFromFile(
+            "Z:\\SteamLibrary\\steamapps\\common\\SCP Containment Breach Multiplayer\\GFX\\map\\4tunnels.rmesh", "008");
+        m.Position -= Vector3.UnitY * 20f;
+        _models.Add(m);
+        _worldBuffer = factory.CreateBuffer(new BufferDescription(80, BufferUsage.UniformBuffer));
         
-        var vertexArray = v.ToArray();
-        _indexCount = (uint) m.Indices.Length;
         
-        _vertexBuffer =
-            factory.CreateBuffer(new BufferDescription((uint)v.Count * VertexPositionTexture.SizeInBytes, BufferUsage.VertexBuffer));
-        _indexBuffer = factory.CreateBuffer(new BufferDescription(_indexCount * sizeof(ushort), BufferUsage.IndexBuffer));
-
-        _worldBuffer = factory.CreateBuffer(new BufferDescription(64, BufferUsage.UniformBuffer));
-        
-        _graphicsDevice.UpdateBuffer(_vertexBuffer, 0, vertexArray);
-        _graphicsDevice.UpdateBuffer(_indexBuffer, 0, m.Indices);
 
         var vertexLayout = new VertexLayoutDescription(new VertexElementDescription("Position",
             VertexElementSemantic.TextureCoordinate,
@@ -168,6 +167,8 @@ class Program
         _worldSet = factory.CreateResourceSet(new ResourceSetDescription(worldLayout, _worldBuffer
         ));
 
+        _imGuiRenderer = new ImGuiRenderer(_graphicsDevice, _graphicsDevice.SwapchainFramebuffer.OutputDescription, 200, 100);
+        _imGuiRenderer.WindowResized(_window.Width, _window.Height);
         _commandList = factory.CreateCommandList();
         
     }
@@ -183,33 +184,81 @@ class Program
         
         _commandList.UpdateBuffer(_viewBuffer, 0, _mainCamera.ViewMatrix);
         // _commandList.UpdateBuffer(_viewBuffer, 0, Matrix4x4.CreateLookAt(_mainCamera.Position, Vector3.Zero, Vector3.UnitY));
-        Matrix4x4 rotation =
-            Matrix4x4.CreateFromAxisAngle(Vector3.UnitY, (_ticks / 1000f))
-            * Matrix4x4.CreateFromAxisAngle(Vector3.UnitX, 0);
-        _commandList.UpdateBuffer(_worldBuffer, 0, ref rotation); 
+        // Matrix4x4 rotation =
+        //     Matrix4x4.CreateFromAxisAngle(Vector3.UnitY, (_ticks / 1000f))
+        //     * Matrix4x4.CreateFromAxisAngle(Vector3.UnitX, 0);
+        // _commandList.UpdateBuffer(_worldBuffer, 0, ref rotation); 
         
         _commandList.SetFramebuffer(_graphicsDevice.SwapchainFramebuffer);
         _commandList.ClearColorTarget(0, RgbaFloat.Black);
         _commandList.ClearDepthStencil(1f);
         _commandList.SetPipeline(_pipeline);
-        _commandList.SetVertexBuffer(0, _vertexBuffer);
-        _commandList.SetIndexBuffer(_indexBuffer, IndexFormat.UInt16);
+
         _commandList.SetGraphicsResourceSet(0, _projViewSet);
         _commandList.SetGraphicsResourceSet(1, _worldSet);
+        _imGuiRenderer.Update(TimeHandler.DeltaTime, _inputSnapshot);
 
-        _commandList.DrawIndexed(_indexCount, 1, 0, 0, 0);
+        ImGui.Begin("Information");
+        ImGui.Text($"Camera Pos: {_mainCamera.Position.X} {_mainCamera.Position.Y} {_mainCamera.Position.Z}");
+        ImGui.Text($"Num of Meshes to render: {_models.Count}");
+        
+
+        
+        DrawObjects();
+        
+        _imGuiRenderer.Render(_graphicsDevice, _commandList);
         _commandList.End();
         _graphicsDevice.SubmitCommands(_commandList);
         _graphicsDevice.SwapBuffers();
         _graphicsDevice.WaitForIdle();
     }
 
+    public static void DrawObjects()
+    {
+        var i = 0;
+        var factory = _graphicsDevice.ResourceFactory;
+        foreach (var model in _models)
+        {
+            var objectData = new GPUModel();
+            model.Position ??= new Vector3(0);
+            model.Scale = 0.005f;
+            
+            objectData.ModelMatrix = Matrix4x4.CreateTranslation((Vector3)model.Position);
+            objectData.ModelColour = new Vector4(i / _models.Count, 1, 0, 1);
+            
+            _commandList.UpdateBuffer(_worldBuffer, 0, ref objectData); 
+
+            _vertexBuffer =
+                factory.CreateBuffer(new BufferDescription((uint)model.Mesh.Vertices.Length * VertexPositionTexture.SizeInBytes, BufferUsage.VertexBuffer));
+            _indexBuffer = factory.CreateBuffer(new BufferDescription((uint)model.Mesh.Indices.Length * sizeof(ushort), BufferUsage.IndexBuffer));
+
+            var vertexArray = new VertexPositionTexture[model.Mesh.Vertices.Length];
+            for (int j = 0; j < vertexArray.Length; j++)
+            {
+                vertexArray[j] = new VertexPositionTexture(model.Mesh.Vertices[j].Position * model.Scale, new Vector2());
+            }
+            
+            _graphicsDevice.UpdateBuffer(_vertexBuffer, 0, vertexArray);
+            _graphicsDevice.UpdateBuffer(_indexBuffer, 0, model.Mesh.Indices);
+            
+            
+            _commandList.SetVertexBuffer(0, _vertexBuffer);
+            _commandList.SetIndexBuffer(_indexBuffer, IndexFormat.UInt16);
+            
+            _commandList.DrawIndexed((uint)model.Mesh.Indices.Length);
+            _vertexBuffer.Dispose();
+            _indexBuffer.Dispose();
+            i++;
+        }
+    }
+    
     private static void Dispose()
     {
         _pipeline.Dispose();
         _commandList.Dispose();
         _vertexBuffer.Dispose();
         _indexBuffer.Dispose();
+        _imGuiRenderer.Dispose();
         _graphicsDevice.Dispose();
     }
 }

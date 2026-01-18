@@ -6,6 +6,12 @@ public class MeshVertex
 {
     public Vector3 Position { get; set; }
     public Vector2 Uv { get; set; }
+    public int Index { get; set; }
     public Vector2 LightmapUv { get; set; }
-    public uint Texture { get; set; }
+    
+    public uint TextureIndex { get; set; }
+    
+    public byte Red { get; set; }
+    public byte Green { get; set; }
+    public byte Blue { get; set; }
 }
