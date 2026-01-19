@@ -1,13 +1,16 @@
 ﻿using System.Numerics;
-using System.Runtime.CompilerServices;
 using Sigrun.Engine.Entity.Components;
 using Sigrun.Rendering.Loader;
 
 namespace Sigrun.Engine.Entity;
 
+/// <summary>
+/// Base element of all non-engine functionality. Non-functional without accompanying
+/// components.
+/// </summary>
 public class GameObject
 {
-    public List<Component>? Components { get; set; } = [];
+    public List<Component> Components { get; set; } = [];
     
     public Vector3 Position { get; set; }
     public Vector3 Rotation { get; set; }

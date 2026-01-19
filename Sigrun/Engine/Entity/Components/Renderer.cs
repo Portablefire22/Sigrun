@@ -1,9 +1,11 @@
-﻿using Microsoft.Extensions.Logging;
-using Sigrun.Logging;
-using Sigrun.Rendering;
+﻿using Sigrun.Rendering;
 
 namespace Sigrun.Engine.Entity.Components;
 
+
+/// <summary>
+/// Specifies a 3D mesh for rendering in the engine
+/// </summary>
 public class Renderer : Component
 {
     public Renderer(GameObject parent, Model model) : base(parent)

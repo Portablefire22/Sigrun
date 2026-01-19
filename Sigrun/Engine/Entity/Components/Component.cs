@@ -1,5 +1,10 @@
 ﻿namespace Sigrun.Engine.Entity.Components;
 
+/// <summary>
+/// Every object with a function is composed of components, every component is called
+/// every frame with Update, on a fixed interval with FixedUpdate(), and on creation
+/// with Startup()
+/// </summary>
 public abstract class Component
 {
     protected Component(GameObject parent)

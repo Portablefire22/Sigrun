@@ -6,6 +6,7 @@ using Sigrun.Engine.Entity;
 using Sigrun.Engine.Entity.Components;
 using Sigrun.Logging;
 using Sigrun.Player;
+using Sigrun.Player.Components;
 using Sigrun.Rendering;
 using Sigrun.Rendering.Loader;
 using Sigrun.Time;
@@ -50,6 +51,8 @@ static class Sigrun
     private static DateTime _lastFixedUpdate = DateTime.Now;
     private static float _fixedUpdateMillis = 10;
 
+    private static Player.Player _player = new ();
+
     private static ILogger _logger = LoggingProvider.NewLogger("Sigrun.Engine.Sigrun");
 
     private static List<GameObject> _gameObjects = [];
@@ -75,11 +78,9 @@ static class Sigrun
 
         CreateResources();
 
-        _mainCamera = new Camera(new Vector3(0,-10, 0), new Vector3(0));
-        
-        _window.MouseMove += _mainCamera.OnMouseMove;
-        _window.KeyDown += _mainCamera.OnKeyDown;
-
+        _window.KeyDown += InputState.OnKeyDown;
+        _window.KeyUp += InputState.OnKeyUp;
+        _window.MouseMove += InputState.OnMouseMove;
        
         _window.FocusGained += OnFocusGained;
         _window.FocusLost += OnFocusLost;
@@ -90,6 +91,11 @@ static class Sigrun
             _graphicsDevice.MainSwapchain.Resize((uint)_window.Width, (uint)_window.Height);
         };
 
+
+        _mainCamera = _player.Camera;
+        
+        SpawnObject(_player);
+        
 
         var obj1 = GameObject.FromModelFile("Assets/Models/4tunnels.rmesh", "4tunnel");
         var obj2 = GameObject.FromModelFile("Assets/Models/173.rmesh", "173");
@@ -129,13 +135,12 @@ static class Sigrun
     {
         foreach (var obj in _gameObjects)
         {
-            if (obj.Components == null) continue;
-
             foreach (var component in obj.Components)
             {
                 switch (component)
                 {
                     case InputHandler inputHandler:
+                        inputHandler.Snapshot = _inputSnapshot;
                         break;
                     default:
                         component.Update();
@@ -149,12 +154,13 @@ static class Sigrun
     {
         foreach (var obj in _gameObjects)
         {
-            if (obj.Components == null) continue;
-
             foreach (var component in obj.Components)
             {
                 switch (component)
                 {
+                    case InputHandler inputHandler:
+                        inputHandler.Snapshot = _inputSnapshot;
+                        break;
                     default:
                         component.FixedUpdate();
                         break;
