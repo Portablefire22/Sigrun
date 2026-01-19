@@ -7,5 +7,4 @@ public class Model
 {
     public Mesh Mesh;
     public RoomMeshEntity[] Entities;
-    public List<string> Textures = new List<string>();
 }

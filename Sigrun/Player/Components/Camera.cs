@@ -1,41 +1,27 @@
 ﻿using System.Numerics;
-using Microsoft.Extensions.Logging;
 using Sigrun.Engine.Entity;
 using Sigrun.Engine.Entity.Components;
-using Sigrun.Logging;
 
 namespace Sigrun.Player.Components;
 
 public class Camera : Component
 {
     public Vector3 Position => Parent.Position + Vector3.UnitY * Offset;
-    public Vector3 Target;
     public float Offset;
     
-    public Camera(GameObject parent, float offset, Vector3 target) : base(parent)
+    public Camera(GameObject parent, float offset) : base(parent)
     {
         Offset = offset;
-        Target = target;
-
         WorldUp = new Vector3(0, 1,0);
-        
-        
-        _logger = LoggingProvider.NewLogger<Camera>();
     }
-
-
 
     public float Yaw { get; set; } = -90f;
     public float Pitch { get; set; } = 0;
-
-
-    private ILogger _logger;
-
     
     public Vector3 Front { get; private set; }
     public Vector3 Up { get; private set; }
     public Vector3 Right { get; private set; }
-    public Vector3 WorldUp { get; private set; }
+    public Vector3 WorldUp { get; }
     
     public Matrix4x4 ViewMatrix => Matrix4x4.CreateLookAt(Position, Position + Front, Up);
     public Matrix4x4 GetProjectionMatrix(float aspectRatio)

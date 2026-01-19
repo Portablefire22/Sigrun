@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+﻿using System.Net.Mime;
+using System.Numerics;
 using System.Text;
 using ImGuiNET;
 using Microsoft.Extensions.Logging;
@@ -8,12 +9,17 @@ using Sigrun.Logging;
 using Sigrun.Player;
 using Sigrun.Player.Components;
 using Sigrun.Rendering;
+using Sigrun.Rendering.Entities;
 using Sigrun.Rendering.Loader;
 using Sigrun.Time;
+using SixLabors.ImageSharp;
 using Veldrid;
+using Veldrid.ImageSharp;
 using Veldrid.Sdl2;
 using Veldrid.SPIRV;
 using Veldrid.StartupUtilities;
+using Vortice.Direct3D11;
+using BufferDescription = Veldrid.BufferDescription;
 
 namespace Sigrun.Engine;
 
@@ -31,6 +37,7 @@ static class Sigrun
     private static ResourceSet _projViewSet;
     private static ResourceSet _worldSet;
     private static ResourceSet _objectInfoSet;
+    private static ResourceSet _textureSet;
     
     private static uint _indexCount;
 
@@ -55,6 +62,7 @@ static class Sigrun
 
     private static ILogger _logger = LoggingProvider.NewLogger("Sigrun.Engine.Sigrun");
 
+    
     private static List<GameObject> _gameObjects = [];
     
     public static void Start()
@@ -227,15 +235,31 @@ static class Sigrun
         var worldLayout = factory.CreateResourceLayout(new ResourceLayoutDescription(
             new ResourceLayoutElementDescription("WorldBuffer", ResourceKind.UniformBuffer, ShaderStages.Vertex)));
         
+        
+        var image = new ImageSharpTexture("Assets/Textures/missingTexture.jpg");
+
+        var tex = image.CreateDeviceTexture(_graphicsDevice, factory);
+        var view = factory.CreateTextureView(tex);
+
+        var worldTextureLayout = factory.CreateResourceLayout(
+            new ResourceLayoutDescription(
+                new ResourceLayoutElementDescription("SurfaceTexture", ResourceKind.TextureReadOnly,
+                    ShaderStages.Fragment),
+                new ResourceLayoutElementDescription("Sampler", ResourceKind.Sampler, ShaderStages.Fragment)));
+
+        _textureSet =
+            factory.CreateResourceSet(new ResourceSetDescription(worldTextureLayout, view,
+                _graphicsDevice.Aniso4xSampler));
+        
         var pipelineDescription = new GraphicsPipelineDescription();
         pipelineDescription.BlendState = BlendStateDescription.SingleOverrideBlend;
         pipelineDescription.DepthStencilState = DepthStencilStateDescription.DepthOnlyLessEqual;
-        pipelineDescription.RasterizerState = new RasterizerStateDescription(FaceCullMode.None, PolygonFillMode.Solid, FrontFace.Clockwise, true, false);
+        pipelineDescription.RasterizerState = new RasterizerStateDescription(FaceCullMode.Front, PolygonFillMode.Solid, FrontFace.Clockwise, true, false);
         pipelineDescription.PrimitiveTopology = PrimitiveTopology.TriangleList;
         pipelineDescription.ResourceLayouts = [];
         pipelineDescription.ShaderSet = new ShaderSetDescription(
             new[] { vertexLayout }, _shaders);
-        pipelineDescription.ResourceLayouts = new[] { projViewLayout, worldLayout };
+        pipelineDescription.ResourceLayouts = new[] { projViewLayout, worldLayout, worldTextureLayout };
         pipelineDescription.Outputs = _graphicsDevice.SwapchainFramebuffer.OutputDescription;
         _pipeline = factory.CreateGraphicsPipeline(pipelineDescription);
 
@@ -245,6 +269,7 @@ static class Sigrun
         
         _worldSet = factory.CreateResourceSet(new ResourceSetDescription(worldLayout, _worldBuffer
         ));
+        
 
         _imGuiRenderer = new ImGuiRenderer(_graphicsDevice, _graphicsDevice.SwapchainFramebuffer.OutputDescription, 200, 100);
         _imGuiRenderer.WindowResized(_window.Width, _window.Height);
@@ -270,6 +295,7 @@ static class Sigrun
 
         _commandList.SetGraphicsResourceSet(0, _projViewSet);
         _commandList.SetGraphicsResourceSet(1, _worldSet);
+        _commandList.SetGraphicsResourceSet(2, _textureSet);
         _imGuiRenderer.Update(TimeHandler.DeltaTime, _inputSnapshot);
 
         ImGui.Begin("Information");
@@ -289,45 +315,53 @@ static class Sigrun
 
     public static void DrawObjects()
     {
-        var i = 0;
         var factory = _graphicsDevice.ResourceFactory;
         foreach (var renderer in _renderables)
         {
-            var objectData = new GPUModel();
-
-            var model = renderer.Model;
-            var obj = renderer.Parent;
-            
-            objectData.ModelMatrix = Matrix4x4.CreateTranslation(obj.Position);
-
-            _commandList.UpdateBuffer(_worldBuffer, 0, ref objectData); 
-
-            _vertexBuffer =
-                factory.CreateBuffer(new BufferDescription((uint)model.Mesh.Vertices.Length * VertexPositionTexture.SizeInBytes, BufferUsage.VertexBuffer));
-            _indexBuffer = factory.CreateBuffer(new BufferDescription((uint)model.Mesh.Indices.Length * sizeof(ushort), BufferUsage.IndexBuffer));
-
-            var vertexArray = new VertexPositionTexture[model.Mesh.Vertices.Length];
-            for (int j = 0; j < vertexArray.Length; j++)
+            DrawObject(factory, renderer.Model.Mesh, renderer.Parent);
+            foreach (var entity in renderer.Model.Entities)
             {
-                var vert = model.Mesh.Vertices[j];
-                vertexArray[j] = new VertexPositionTexture(vert.Position * obj.Scale, new Vector2(), vert.TextureIndex);
+                if (entity is not ModelEntity modelEntity || modelEntity.Mesh == null) continue;
+                DrawObject(factory, modelEntity.Mesh, renderer.Parent);
             }
-            
-            _graphicsDevice.UpdateBuffer(_vertexBuffer, 0, vertexArray);
-            _graphicsDevice.UpdateBuffer(_indexBuffer, 0, model.Mesh.Indices);
-            
-            
-            _commandList.SetVertexBuffer(0, _vertexBuffer);
-            _commandList.SetIndexBuffer(_indexBuffer, IndexFormat.UInt16);
-            
-            _commandList.DrawIndexed((uint)model.Mesh.Indices.Length);
-            _vertexBuffer.Dispose();
-            _indexBuffer.Dispose();
-            i++;
         }
     }
+
+    private static void DrawObject(ResourceFactory factory, Mesh mesh, GameObject obj)
+    {
+        // Object translation
+        var objectData = new GPUModel();
+        objectData.ModelMatrix = Matrix4x4.CreateTranslation(obj.Position);
+        _commandList.UpdateBuffer(_worldBuffer, 0, ref objectData); 
+
+        // Upload model to GPU for rendering 
+        _vertexBuffer =
+            factory.CreateBuffer(new BufferDescription((uint)mesh.Vertices.Length * VertexPositionTexture.SizeInBytes, BufferUsage.VertexBuffer));
+        _indexBuffer = factory.CreateBuffer(new BufferDescription((uint)mesh.Indices.Length * sizeof(ushort), BufferUsage.IndexBuffer));
+
+        var vertexArray = new VertexPositionTexture[mesh.Vertices.Length];
+        for (int j = 0; j < vertexArray.Length; j++)
+        {
+            var vert = mesh.Vertices[j];
+            vertexArray[j] = new VertexPositionTexture(vert.Position * obj.Scale, vert.Uv, vert.TextureIndex);
+        }
+            
+        _graphicsDevice.UpdateBuffer(_vertexBuffer, 0, vertexArray);
+        _graphicsDevice.UpdateBuffer(_indexBuffer, 0, mesh.Indices);
+            
+            
+        _commandList.SetVertexBuffer(0, _vertexBuffer);
+        _commandList.SetIndexBuffer(_indexBuffer, IndexFormat.UInt16);
+            
+
+        
+        // Draw model
+        _commandList.DrawIndexed((uint)mesh.Indices.Length);
+        _vertexBuffer.Dispose();
+        _indexBuffer.Dispose();
+    }
     
-    private static void Dispose()
+    public static void Dispose()
     {
         _pipeline.Dispose();
         _commandList.Dispose();

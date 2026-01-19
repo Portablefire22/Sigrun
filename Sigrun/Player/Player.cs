@@ -20,7 +20,7 @@ public class Player : GameObject
         Rotation = rotation;
 
         
-        Camera = new Camera(this, _cameraOffset, new Vector3(0));
+        Camera = new Camera(this, _cameraOffset);
         PlayerController = new PlayerController(this, Camera);
         Components.AddRange(Camera, PlayerController);
     }

@@ -80,7 +80,6 @@ public class RMeshLoader
         return new Rendering.Model()
         {
             Entities = _entities.ToArray(),
-            Textures = _texturePaths,
             Mesh = mesh
         };
     }
