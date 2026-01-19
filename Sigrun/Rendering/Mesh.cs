@@ -6,4 +6,5 @@ public class Mesh
    public ushort[] Indices;
    public string Textures;
    public string Name;
+   public bool Alpha;
 }

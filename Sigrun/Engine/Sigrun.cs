@@ -39,6 +39,8 @@ static class Sigrun
     private static ResourceSet _worldSet;
     private static ResourceSet _objectInfoSet;
     private static ResourceSet _textureSet;
+
+    private static List<Mesh> _alphaMeshes = [];
     
     private static uint _indexCount;
 
@@ -46,6 +48,7 @@ static class Sigrun
     
     private static Shader[] _shaders;
     private static Pipeline _pipeline;
+    private static Pipeline _alphaPipeline;
 
     private static List<Renderer> _renderables = [];
 
@@ -113,6 +116,19 @@ static class Sigrun
         obj2.Position -= Vector3.UnitY * 25f;
         SpawnObject(obj1);
         SpawnObject(obj2);
+
+        for (int i = 0; i < 19*19; i++)
+        {
+            
+            obj1 = GameObject.FromModelFile("Assets/Models/4tunnels.rmesh", "4tunnel");
+            obj1.Scale = 0.005f;
+            var rnd = new Random();
+            obj1.Position = new Vector3(
+                rnd.NextSingle() * 200,
+                rnd.NextSingle() * 200,
+                rnd.NextSingle() * 200);
+            SpawnObject(obj1);
+        }
 
         DateTime timer;
         while (_window.Exists)
@@ -260,7 +276,20 @@ static class Sigrun
         pipelineDescription.ResourceLayouts = new[] { projViewLayout, worldLayout, worldTextureLayout };
         pipelineDescription.Outputs = _graphicsDevice.SwapchainFramebuffer.OutputDescription;
         _pipeline = factory.CreateGraphicsPipeline(pipelineDescription);
-
+        
+        pipelineDescription = new GraphicsPipelineDescription();
+        pipelineDescription.BlendState = BlendStateDescription.SingleAlphaBlend;
+        pipelineDescription.DepthStencilState = DepthStencilStateDescription.DepthOnlyLessEqual;
+        pipelineDescription.RasterizerState = new RasterizerStateDescription(FaceCullMode.None, PolygonFillMode.Solid, FrontFace.CounterClockwise, true, false);
+        pipelineDescription.PrimitiveTopology = PrimitiveTopology.TriangleList;
+        pipelineDescription.ResourceLayouts = [];
+        pipelineDescription.ShaderSet = new ShaderSetDescription(
+            new[] { vertexLayout }, _shaders);
+        pipelineDescription.ResourceLayouts = new[] { projViewLayout, worldLayout, worldTextureLayout };
+        pipelineDescription.Outputs = _graphicsDevice.SwapchainFramebuffer.OutputDescription;
+        _alphaPipeline = factory.CreateGraphicsPipeline(pipelineDescription);
+        
+        
         _projViewSet = factory.CreateResourceSet(new ResourceSetDescription(
             projViewLayout, _projectionBuffer, _viewBuffer
         ));
@@ -317,13 +346,37 @@ static class Sigrun
         {
             foreach (var mesh in renderer.Model.Meshes)
             {
+                if (mesh.Alpha)
+                {
+                    _alphaMeshes.Add(mesh);
+                    continue;
+                }
                 DrawObject(factory, mesh, renderer.Parent);
             }
+
             foreach (var entity in renderer.Model.Entities)
             {
                 if (entity is not ModelEntity modelEntity || modelEntity.Mesh == null) continue;
+                
+                if (modelEntity.Mesh.Alpha)
+                {
+                    _alphaMeshes.Add(modelEntity.Mesh);
+                    continue;
+                }
                 DrawObject(factory, modelEntity.Mesh, renderer.Parent);
             }
+           
+            // For objects that contain transparency we switch to a pipeline that does not cull backfaces
+            // This prevents the back of glass from being culled, with the added benefit that glass does 
+            // not prevent other faces from rendering
+            if (_alphaMeshes.Count == 0) continue;
+            _commandList.SetPipeline(_alphaPipeline);
+            foreach (var mesh in _alphaMeshes)
+            {
+                DrawObject(factory, mesh, renderer.Parent);
+            }
+            _alphaMeshes.Clear();
+            _commandList.SetPipeline(_pipeline);
         }
     }
 

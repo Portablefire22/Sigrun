@@ -80,7 +80,8 @@ private FileStream _fileStream;
                 Indices = _textureIndices[j],
                 Name = $"{_name}_{_texturePaths[j]}",
                 Textures = _texturePaths[j],
-                Vertices = _textureVertices[j]
+                Vertices = _textureVertices[j],
+                Alpha = _texturePaths[j].Contains("glass")
             };
             meshes.Add(mesh);
         }
@@ -163,16 +164,18 @@ private FileStream _fileStream;
         ReadTextureObjectData(relativePath);
     }
     
-    private void ReadTextureObjectData(string relativePath)
+    private bool ReadTextureObjectData(string relativePath)
     {
         var vertexCount = ReadInt32();
         TextureHandler.AddTexture(relativePath);
 
+        var alpha = relativePath.Contains("glass");
+        
         var vertices = new MeshVertex[vertexCount];
         for (int i = 0; i < vertexCount; i++)
         {
             var v = ReadVertexData();
-            v.Alpha = relativePath.Contains("glass") ? 0.5f : 1f;
+            v.Alpha = alpha ? 0.5f : 1f;
             vertices[i] = v;
         }
         _textureVertices.Add(vertices); 
@@ -185,6 +188,7 @@ private FileStream _fileStream;
         }
         _textureIndices.Add(index);
         _indicesOffset += vertexCount;
+        return alpha;
     }
 
     public void ReadTexture()

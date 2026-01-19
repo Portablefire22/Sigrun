@@ -17,6 +17,10 @@ public class Camera : Component
 
     public float Yaw { get; set; } = -90f;
     public float Pitch { get; set; } = 0;
+
+    public float ZFar { get; set; } = 1000f;
+    public float ZNear { get; set; } = 0.1f;
+    public float Fov { get; set; } = 100;
     
     public Vector3 Front { get; private set; }
     public Vector3 Up { get; private set; }
@@ -27,10 +31,10 @@ public class Camera : Component
     public Matrix4x4 GetProjectionMatrix(float aspectRatio)
     {
         return Matrix4x4.CreatePerspectiveFieldOfView(
-                1, 
+                (float)ToRadians(Fov), 
                 aspectRatio,
-                0.1f,
-                1000f);
+                ZNear,
+                ZFar);
     }
 
     public void UpdateCameraVectors()
