@@ -1,14 +1,11 @@
 ﻿using System.Numerics;
-using Sigrun.Model.Entities;
+using Sigrun.Rendering.Entities;
 
-namespace Sigrun.Model;
+namespace Sigrun.Rendering;
 
 public class Model
 {
     public Mesh Mesh;
     public RoomMeshEntity[] Entities;
     public List<string> Textures = new List<string>();
-    public Vector3? Position;
-    public float Scale;
-    public Vector3 Rotation;
 }

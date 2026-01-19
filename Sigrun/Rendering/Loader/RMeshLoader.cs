@@ -2,9 +2,9 @@
 using System.Text;
 using Microsoft.Extensions.Logging;
 using Sigrun.Logging;
-using Sigrun.Model.Entities;
+using Sigrun.Rendering.Entities;
 
-namespace Sigrun.Model.Loader;
+namespace Sigrun.Rendering.Loader;
 
 public class RMeshLoader
 {
@@ -30,7 +30,7 @@ public class RMeshLoader
     // This holds the traditional entities but also the different meshes
     private List<RoomMeshEntity> _entities;
 
-    public Model LoadFromFile(string path, string name)
+    public Rendering.Model LoadFromFile(string path, string name)
     {
         _hasTriggers = false;
         _textureCount = 0;
@@ -46,7 +46,7 @@ public class RMeshLoader
         return Read();
     }
 
-    private Model Read()
+    private Rendering.Model Read()
     {
         switch (ReadB3DString())
         {
@@ -77,12 +77,10 @@ public class RMeshLoader
             Vertices = _textureVertices.ToArray()
         };
         
-        return new Model()
+        return new Rendering.Model()
         {
-            Position = new Vector3(),
             Entities = _entities.ToArray(),
             Textures = _texturePaths,
-            Rotation = new Vector3(),
             Mesh = mesh
         };
     }

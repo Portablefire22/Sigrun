@@ -1,6 +1,6 @@
 ﻿using System.Numerics;
 
-namespace Sigrun.Model;
+namespace Sigrun.Rendering;
 
 public class MeshVertex
 {

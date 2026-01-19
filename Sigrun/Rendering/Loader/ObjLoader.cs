@@ -1,7 +1,6 @@
 ﻿using System.Numerics;
-using Vulkan;
 
-namespace Sigrun.Model.Loader;
+namespace Sigrun.Rendering.Loader;
 
 public class ObjLoader
 {

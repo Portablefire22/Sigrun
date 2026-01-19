@@ -85,7 +85,6 @@ public class Camera
 
     public void OnKeyDown(KeyEvent obj)
     {
-        // throw new NotImplementedException();
         var velocity = Speed * TimeHandler.DeltaTime;
         switch (obj.Key)
         {

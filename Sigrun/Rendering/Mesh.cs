@@ -1,4 +1,4 @@
-﻿namespace Sigrun.Model;
+﻿namespace Sigrun.Rendering;
 
 public class Mesh
 {

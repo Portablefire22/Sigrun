@@ -1,6 +1,6 @@
 ﻿using System.Numerics;
 
-namespace Sigrun.Model.Entities;
+namespace Sigrun.Rendering.Entities;
 
 public class SoundEmitterEntity : RoomMeshEntity
 {

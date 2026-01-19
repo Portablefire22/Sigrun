@@ -14,6 +14,8 @@ public static class TimeHandler
     private static uint _frameCount;
     public static float DeltaTime { get; private set; }
     
+    public static float FixedUpdateMillis { get; private set; }
+    
     public static void UpdateDeltaTime()
     {
         time2 = DateTime.Now;
