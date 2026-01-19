@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
 using System.Text;
 using Microsoft.Extensions.Logging;
+using Sigrun.Engine;
 using Sigrun.Logging;
 using Sigrun.Rendering.Entities;
 
@@ -59,10 +60,11 @@ public class RMeshLoader
                 throw new Exception("Not an rmesh file");
         }
 
+        var meshes = new List<Mesh>();
         _textureCount = ReadInt32();
         for (int i = 0; i < _textureCount; i++)
         {
-            ReadTexture();
+            meshes.Add(ReadTexture());
         }
         GetInvisCollisions();
         if (_hasTriggers) GetTriggerBoxes();
@@ -80,7 +82,7 @@ public class RMeshLoader
         return new Rendering.Model()
         {
             Entities = _entities.ToArray(),
-            Mesh = mesh
+            Meshes = meshes.ToArray()
         };
     }
 
@@ -158,7 +160,7 @@ public class RMeshLoader
     private void ReadTextureObjectData(string relativePath)
     {
         var vertexCount = ReadInt32();
-        var textureIndex = _texturePaths.IndexOf(relativePath);
+        var textureIndex = TextureHandler.AddTexture(relativePath);
 
         var vertices = new MeshVertex[vertexCount];
         _textureVertices.EnsureCapacity(_textureVertices.Count + vertexCount);
@@ -179,7 +181,7 @@ public class RMeshLoader
         _indicesOffset += vertexCount;
     }
 
-    public void ReadTexture()
+    public Mesh ReadTexture()
     {
         var flag = _fileStream.ReadByte();
         ReadLightmap();
@@ -195,6 +197,20 @@ public class RMeshLoader
             default:
                 throw new ArgumentException($"invalid flag '{flag}'");
         }
+        var mesh = new Mesh()
+        {
+            Indices = _vertexIndices.ToArray(),
+            Name = _name,
+            Textures = _texturePaths.ToArray(),
+            Vertices = _textureVertices.ToArray()
+        };
+
+        _vertexIndices.Clear();
+        _textureVertices.Clear();
+        _textureCount = 0;
+        
+        return mesh;
+
     }
     
     public void GetInvisCollisions()

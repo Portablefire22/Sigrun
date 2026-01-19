@@ -29,8 +29,8 @@ public class Camera : Component
         return Matrix4x4.CreatePerspectiveFieldOfView(
                 1, 
                 aspectRatio,
-                0.001f,
-                1000000000f);
+                0.1f,
+                1000f);
     }
 
     public void UpdateCameraVectors()

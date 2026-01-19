@@ -28,6 +28,8 @@
       <Content Include="Assets\**\*">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </Content>
+      <Compile Remove="Rendering\Loader\RMeshLoader.cs" />
+      <None Include="Rendering\Loader\RMeshLoader.cs" />
     </ItemGroup>
 
     <ItemGroup>

@@ -79,7 +79,7 @@ public class ObjLoader
             Vertices = verts.ToArray(),
             Indices = ind.ToArray(),
             Name = _name,
-            Textures = Array.Empty<string>()
+            Textures = ""
         };
     }
 }

@@ -34,6 +34,7 @@ static class Sigrun
     private static DeviceBuffer _viewBuffer;
     private static DeviceBuffer _worldBuffer;
     private static DeviceBuffer _objectInfoBuffer;
+    private static TextureView _textureView;
     private static ResourceSet _projViewSet;
     private static ResourceSet _worldSet;
     private static ResourceSet _objectInfoSet;
@@ -125,6 +126,7 @@ static class Sigrun
                 _lastFixedUpdate = DateTime.Now;
                 FixedUpdate();
             }
+            TextureHandler.CreateSets(_graphicsDevice);
             Draw();
         }
     }
@@ -215,7 +217,7 @@ static class Sigrun
             VertexElementSemantic.TextureCoordinate,
             VertexElementFormat.Float3), new VertexElementDescription("Texture Coordinate",
             VertexElementSemantic.TextureCoordinate,
-            VertexElementFormat.Float2), new VertexElementDescription("Texture Index", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Int1));
+            VertexElementFormat.Float2), new VertexElementDescription("Alpha", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float1));
 
         var vertexCode = File.ReadAllText("Shader/shader.vert").ReplaceLineEndings();
         var fragmentCode= File.ReadAllText("Shader/shader.frag").ReplaceLineEndings();
@@ -234,27 +236,23 @@ static class Sigrun
 
         var worldLayout = factory.CreateResourceLayout(new ResourceLayoutDescription(
             new ResourceLayoutElementDescription("WorldBuffer", ResourceKind.UniformBuffer, ShaderStages.Vertex)));
-        
-        
-        var image = new ImageSharpTexture("Assets/Textures/missingTexture.jpg");
 
-        var tex = image.CreateDeviceTexture(_graphicsDevice, factory);
-        var view = factory.CreateTextureView(tex);
 
+        // _textureBuffer = factory.CreateBuffer(new BufferDescription((uint) (1.18 * Math.Pow(10, 8)), BufferUsage.UniformBuffer));
+
+        TextureHandler.AddTexture("missingTexture.jpg");
+
+        
         var worldTextureLayout = factory.CreateResourceLayout(
             new ResourceLayoutDescription(
-                new ResourceLayoutElementDescription("SurfaceTexture", ResourceKind.TextureReadOnly,
+                new ResourceLayoutElementDescription("SurfaceTextures", ResourceKind.TextureReadOnly,
                     ShaderStages.Fragment),
                 new ResourceLayoutElementDescription("Sampler", ResourceKind.Sampler, ShaderStages.Fragment)));
 
-        _textureSet =
-            factory.CreateResourceSet(new ResourceSetDescription(worldTextureLayout, view,
-                _graphicsDevice.Aniso4xSampler));
-        
         var pipelineDescription = new GraphicsPipelineDescription();
-        pipelineDescription.BlendState = BlendStateDescription.SingleOverrideBlend;
+        pipelineDescription.BlendState = BlendStateDescription.SingleAlphaBlend;
         pipelineDescription.DepthStencilState = DepthStencilStateDescription.DepthOnlyLessEqual;
-        pipelineDescription.RasterizerState = new RasterizerStateDescription(FaceCullMode.Front, PolygonFillMode.Solid, FrontFace.Clockwise, true, false);
+        pipelineDescription.RasterizerState = new RasterizerStateDescription(FaceCullMode.Front, PolygonFillMode.Solid, FrontFace.CounterClockwise, true, false);
         pipelineDescription.PrimitiveTopology = PrimitiveTopology.TriangleList;
         pipelineDescription.ResourceLayouts = [];
         pipelineDescription.ShaderSet = new ShaderSetDescription(
@@ -292,10 +290,9 @@ static class Sigrun
         _commandList.ClearColorTarget(0, RgbaFloat.Black);
         _commandList.ClearDepthStencil(1f);
         _commandList.SetPipeline(_pipeline);
-
+        
         _commandList.SetGraphicsResourceSet(0, _projViewSet);
         _commandList.SetGraphicsResourceSet(1, _worldSet);
-        _commandList.SetGraphicsResourceSet(2, _textureSet);
         _imGuiRenderer.Update(TimeHandler.DeltaTime, _inputSnapshot);
 
         ImGui.Begin("Information");
@@ -318,7 +315,10 @@ static class Sigrun
         var factory = _graphicsDevice.ResourceFactory;
         foreach (var renderer in _renderables)
         {
-            DrawObject(factory, renderer.Model.Mesh, renderer.Parent);
+            foreach (var mesh in renderer.Model.Meshes)
+            {
+                DrawObject(factory, mesh, renderer.Parent);
+            }
             foreach (var entity in renderer.Model.Entities)
             {
                 if (entity is not ModelEntity modelEntity || modelEntity.Mesh == null) continue;
@@ -343,16 +343,30 @@ static class Sigrun
         for (int j = 0; j < vertexArray.Length; j++)
         {
             var vert = mesh.Vertices[j];
-            vertexArray[j] = new VertexPositionTexture(vert.Position * obj.Scale, vert.Uv, vert.TextureIndex);
+            vertexArray[j] = new VertexPositionTexture(vert.Position * obj.Scale, vert.Uv, vert.Alpha);
         }
             
         _graphicsDevice.UpdateBuffer(_vertexBuffer, 0, vertexArray);
         _graphicsDevice.UpdateBuffer(_indexBuffer, 0, mesh.Indices);
             
-            
         _commandList.SetVertexBuffer(0, _vertexBuffer);
         _commandList.SetIndexBuffer(_indexBuffer, IndexFormat.UInt16);
             
+        // _textureView = TextureHandler.GetTextureView(_graphicsDevice, _graphicsDevice.ResourceFactory, mesh.Textures);
+        //         
+        // var worldTextureLayout = factory.CreateResourceLayout(
+        //     new ResourceLayoutDescription(
+        //         new ResourceLayoutElementDescription("SurfaceTextures", ResourceKind.TextureReadOnly,
+        //             ShaderStages.Fragment),
+        //         new ResourceLayoutElementDescription("Sampler", ResourceKind.Sampler, ShaderStages.Fragment)));
+        // _textureSet =
+        //     factory.CreateResourceSet(new ResourceSetDescription(worldTextureLayout, _textureView,
+        //         _graphicsDevice.Aniso4xSampler));
+        // _commandList.SetGraphicsResourceSet(2, _textureSet);
+
+        _textureSet = TextureHandler.TextureSets[mesh.Textures];
+        
+        _commandList.SetGraphicsResourceSet(2, _textureSet);
 
         
         // Draw model
@@ -368,6 +382,7 @@ static class Sigrun
         _vertexBuffer.Dispose();
         _indexBuffer.Dispose();
         _imGuiRenderer.Dispose();
+        TextureHandler.Dispose();
         _graphicsDevice.Dispose();
     }
 }
@@ -382,15 +397,15 @@ struct VertexPositionTexture
     public float TexU;
     public float TexV;
 
-    public int TexIndex;
+    public float Alpha;
 
-    public VertexPositionTexture(Vector3 pos, Vector2 uv, int texIndex)
+    public VertexPositionTexture(Vector3 pos, Vector2 uv, float alpha)
     {
         PosX = pos.X;
         PosY = pos.Y;
         PosZ = pos.Z;
         TexU = uv.X;
         TexV = uv.Y;
-        TexIndex = texIndex;
+        Alpha = alpha;
     }
 }

@@ -2,10 +2,10 @@
 
 layout(location = 0) in vec3 Position;
 layout(location = 1) in vec2 Color;
-layout(location = 2) in int texIndex;
+layout(location = 2) in float in_alpha;
 
 layout(location = 0) out vec2 fsin_texCoords;
-layout(location = 1) out int tex_index;
+layout(location = 1) out float fsin_alpha;
 
 
 layout(std140, set = 0, binding = 0) uniform ProjectionBuffer
@@ -33,5 +33,5 @@ void main()
     vec4 clipPosition = Projection * viewPosition;
     gl_Position = clipPosition;
     fsin_texCoords = Color;
-    tex_index = texIndex;
+    fsin_alpha = in_alpha;
 }

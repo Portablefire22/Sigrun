@@ -5,6 +5,6 @@ namespace Sigrun.Rendering;
 
 public class Model
 {
-    public Mesh Mesh;
+    public Mesh[] Meshes;
     public RoomMeshEntity[] Entities;
 }

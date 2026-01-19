@@ -18,7 +18,7 @@ public class GameObject
 
     public static GameObject FromModelFile(string path, string name)
     {
-        var loader = new RMeshLoader();
+        var loader = new RMeshLoader2();
         var model = loader.LoadFromFile(path, name);
 
 
