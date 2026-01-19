@@ -1,24 +1,19 @@
-﻿using System.Net.Mime;
-using System.Numerics;
+﻿using System.Numerics;
 using System.Text;
 using ImGuiNET;
 using Microsoft.Extensions.Logging;
 using Sigrun.Engine.Entity;
 using Sigrun.Engine.Entity.Components;
+using Sigrun.Engine.Entity.Components.Physics;
 using Sigrun.Logging;
-using Sigrun.Player;
 using Sigrun.Player.Components;
 using Sigrun.Rendering;
 using Sigrun.Rendering.Entities;
-using Sigrun.Rendering.Loader;
 using Sigrun.Time;
-using SixLabors.ImageSharp;
 using Veldrid;
-using Veldrid.ImageSharp;
 using Veldrid.Sdl2;
 using Veldrid.SPIRV;
 using Veldrid.StartupUtilities;
-using Vortice.Direct3D11;
 using BufferDescription = Veldrid.BufferDescription;
 
 namespace Sigrun.Engine;
@@ -56,6 +51,8 @@ static class Sigrun
     private static InputSnapshot _inputSnapshot;
     
     private static Sdl2Window _window;
+
+    private static bool _mouseCaptured = true;
     
     private static Camera _mainCamera;
 
@@ -91,6 +88,7 @@ static class Sigrun
         CreateResources();
 
         _window.KeyDown += InputState.OnKeyDown;
+        _window.KeyDown += GlobalKeys;
         _window.KeyUp += InputState.OnKeyUp;
         _window.MouseMove += InputState.OnMouseMove;
        
@@ -113,6 +111,9 @@ static class Sigrun
         obj2.Scale = 0.005f;
         obj1.Scale = 0.005f;
         obj2.Position -= Vector3.UnitY * 25f;
+        
+        obj2.Components.Add(new Rigidbody(obj2));
+        
         SpawnObject(obj1);
         SpawnObject(obj2);
 
@@ -136,6 +137,17 @@ static class Sigrun
             TextureHandler.CreateSets(_graphicsDevice);
             Draw();
         }
+    }
+
+    public static void GlobalKeys(KeyEvent e)
+    {
+        switch (e.Key)
+        {
+            case Key.Escape:
+                _mouseCaptured = !_mouseCaptured;
+                CaptureMouse(_mouseCaptured);
+                break;
+        } 
     }
 
     public static void CaptureMouse(bool shouldCapture)
@@ -210,14 +222,12 @@ static class Sigrun
     
     private static void OnFocusLost()
     {
-        Sdl2Native.SDL_SetRelativeMouseMode(false);
-        // Sdl2Native.SDL_CaptureMouse(false);
+        CaptureMouse(false);
     }
 
     private static void OnFocusGained()
     {
-        Sdl2Native.SDL_SetRelativeMouseMode(true);
-        // Sdl2Native.SDL_CaptureMouse(true);
+        CaptureMouse(true);
     }
 
 
