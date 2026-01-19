@@ -60,7 +60,7 @@ static class Sigrun
     private static Camera _mainCamera;
 
     private static DateTime _lastFixedUpdate = DateTime.Now;
-    private static float _fixedUpdateMillis = 10;
+    private static float _fixedUpdateMillis = 20;
 
     private static Player.Player _player = new ();
 
@@ -103,7 +103,6 @@ static class Sigrun
             _graphicsDevice.MainSwapchain.Resize((uint)_window.Width, (uint)_window.Height);
         };
 
-
         _mainCamera = _player.Camera;
         
         SpawnObject(_player);
@@ -117,34 +116,31 @@ static class Sigrun
         SpawnObject(obj1);
         SpawnObject(obj2);
 
-        for (int i = 0; i < 19*19; i++)
-        {
-            
-            obj1 = GameObject.FromModelFile("Assets/Models/4tunnels.rmesh", "4tunnel");
-            obj1.Scale = 0.005f;
-            var rnd = new Random();
-            obj1.Position = new Vector3(
-                rnd.NextSingle() * 200,
-                rnd.NextSingle() * 200,
-                rnd.NextSingle() * 200);
-            SpawnObject(obj1);
-        }
-
+        Sdl2Native.SDL_SetHint("SDL_MOUSE_RELATIVE_MODE_CENTER", "1");
+        
         DateTime timer;
         while (_window.Exists)
         {
             timer = DateTime.Now;
             TimeHandler.UpdateDeltaTime();
             _inputSnapshot = _window.PumpEvents();
+            InputState.Delta = _window.MouseDelta;
             Update();
-            if ((timer - _lastFixedUpdate).Milliseconds >= _fixedUpdateMillis)
+            var diff = (timer - _lastFixedUpdate).Milliseconds;
+            while (diff >= _fixedUpdateMillis)
             {
                 _lastFixedUpdate = DateTime.Now;
                 FixedUpdate();
+                diff -= 20;
             }
             TextureHandler.CreateSets(_graphicsDevice);
             Draw();
         }
+    }
+
+    public static void CaptureMouse(bool shouldCapture)
+    {
+        Sdl2Native.SDL_SetRelativeMouseMode(shouldCapture);
     }
 
     public static void SpawnObject(GameObject obj)
@@ -214,12 +210,14 @@ static class Sigrun
     
     private static void OnFocusLost()
     {
-        Sdl2Native.SDL_CaptureMouse(false);
+        Sdl2Native.SDL_SetRelativeMouseMode(false);
+        // Sdl2Native.SDL_CaptureMouse(false);
     }
 
     private static void OnFocusGained()
     {
-        Sdl2Native.SDL_CaptureMouse(true);
+        Sdl2Native.SDL_SetRelativeMouseMode(true);
+        // Sdl2Native.SDL_CaptureMouse(true);
     }
 
 
@@ -417,7 +415,7 @@ static class Sigrun
         //         _graphicsDevice.Aniso4xSampler));
         // _commandList.SetGraphicsResourceSet(2, _textureSet);
 
-        _textureSet = TextureHandler.TextureSets[mesh.Textures];
+        _textureSet = TextureHandler.GetTextureSet(mesh.Textures);
         
         _commandList.SetGraphicsResourceSet(2, _textureSet);
 

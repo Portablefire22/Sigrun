@@ -8,7 +8,12 @@ public static class InputState
 {
     public static List<Key> PressedKeys { get; private set; } = new ();
 
-    public static Vector2 MousePosition { get; private set; }
+    public static Vector2 MousePosition
+    {
+        get; private set; 
+    }
+
+    public static Vector2 Delta { get; set; }
 
     public static void OnMouseMove(MouseMoveEventArgs obj)
     {

@@ -39,6 +39,11 @@ public static class TextureHandler
         }
     }
 
+    public static ResourceSet GetTextureSet(string name)
+    {
+        return TextureSets.TryGetValue(name, out var set) ? set : TextureSets["missingTexture.jpg"];
+    }
+
     public static void CreateSets(GraphicsDevice graphicsDevice)
     {
         if (!_newTextures) return;

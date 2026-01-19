@@ -13,7 +13,6 @@ public class PlayerController : Component
     public float Sensitivity { get; set; } = 0.1f;
     public float Zoom { get; set; } = 45f ;
     
-    private Vector2 _lastMouse;
     
     public PlayerController(GameObject parent, Camera camera) : base(parent)
     {
@@ -28,12 +27,8 @@ public class PlayerController : Component
     
     public void ProcessMouse()
     {
-        var mousePosition = InputState.MousePosition;
-        var mouseMovement = mousePosition - _lastMouse;
-        _lastMouse = mousePosition; 
-        
-        var xOffset = mouseMovement.X * Sensitivity;
-        var yOffset = mouseMovement.Y * -Sensitivity;
+        var xOffset = InputState.Delta.X * Sensitivity;
+        var yOffset = InputState.Delta.Y * -Sensitivity;
 
         _camera.Yaw += xOffset;
         _camera.Pitch += yOffset;
