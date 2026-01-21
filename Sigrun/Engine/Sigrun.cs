@@ -5,10 +5,12 @@ using Microsoft.Extensions.Logging;
 using Sigrun.Engine.Entity;
 using Sigrun.Engine.Entity.Components;
 using Sigrun.Engine.Entity.Components.Physics;
+using Sigrun.Engine.Entity.Components.Physics.Colliders;
 using Sigrun.Logging;
 using Sigrun.Player.Components;
 using Sigrun.Rendering;
 using Sigrun.Rendering.Entities;
+using Sigrun.Rendering.Primitives;
 using Sigrun.Time;
 using Veldrid;
 using Veldrid.Sdl2;
@@ -65,6 +67,7 @@ static class Sigrun
 
     
     private static List<GameObject> _gameObjects = [];
+    private static List<Collider> _colliders = [];
     
     public static void Start()
     {
@@ -104,18 +107,28 @@ static class Sigrun
         _mainCamera = _player.Camera;
         
         SpawnObject(_player);
-        
 
         var obj1 = GameObject.FromModelFile("Assets/Models/4tunnels.rmesh", "4tunnel");
         var obj2 = GameObject.FromModelFile("Assets/Models/173.rmesh", "173");
         obj2.Scale = 0.005f;
-        obj1.Scale = 0.005f;
+        obj1.Scale = 0.0005f;
         obj2.Position -= Vector3.UnitY * 25f;
         
-        obj2.Components.Add(new Rigidbody(obj2));
+        var rigidbody = new Rigidbody(obj2) {Collider = new BoxCollider(obj2) };
+        obj2.Components.Add(rigidbody);
+
+        var obj3 = new GameObject();
         
-        SpawnObject(obj1);
+        var mod = new Model() { Meshes = [new CubeMesh(new Vector3(2))] };
+        var rigidbody2 = new Rigidbody(obj2) {Collider = new BoxCollider(obj3) };
+        var renderer = new Renderer(obj3, mod);
+        obj3.Components.Add(renderer);
+        obj3.Components.Add(rigidbody2);
+
+        rigidbody.Collider.Intersects(rigidbody2.Collider);
+        
         SpawnObject(obj2);
+        SpawnObject(obj3);
 
         Sdl2Native.SDL_SetHint("SDL_MOUSE_RELATIVE_MODE_CENTER", "1");
         
@@ -158,7 +171,6 @@ static class Sigrun
     public static void SpawnObject(GameObject obj)
     {
         _gameObjects.Add(obj);
-        if (obj.Components == null) return;
         foreach (var objComponent in obj.Components)
         {
            objComponent.Startup(); 
@@ -186,6 +198,22 @@ static class Sigrun
 
     private static void FixedUpdate()
     {
+        // Physics
+        for (int i = 0; i < _colliders.Count / 2; i++)
+        {
+            for (int j = _colliders.Count; j > i; j++)
+            {
+                var col1 = _colliders[i];
+                var col2 = _colliders[j];
+                
+                if (!col1.Intersects(col2)) continue;
+
+                col1.Touching.Add(col2);
+                col2.Touching.Add(col1);
+            }
+        }
+        
+        // Component FixedUpdate
         foreach (var obj in _gameObjects)
         {
             foreach (var component in obj.Components)
@@ -230,6 +258,11 @@ static class Sigrun
         CaptureMouse(true);
     }
 
+    public static void AddCollider(Collider collider)
+    {
+        
+    }
+
 
     private static void CreateResources()
     {
@@ -241,7 +274,9 @@ static class Sigrun
             VertexElementSemantic.TextureCoordinate,
             VertexElementFormat.Float3), new VertexElementDescription("Texture Coordinate",
             VertexElementSemantic.TextureCoordinate,
-            VertexElementFormat.Float2), new VertexElementDescription("Alpha", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float1));
+            VertexElementFormat.Float2), 
+            new VertexElementDescription("Normal", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float3),
+            new VertexElementDescription("Alpha", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float1));
 
         var vertexCode = File.ReadAllText("Shader/shader.vert").ReplaceLineEndings();
         var fragmentCode= File.ReadAllText("Shader/shader.frag").ReplaceLineEndings();
@@ -362,18 +397,22 @@ static class Sigrun
                 DrawObject(factory, mesh, renderer.Parent);
             }
 
-            foreach (var entity in renderer.Model.Entities)
+            if (renderer.Model.Entities != null)
             {
-                if (entity is not ModelEntity modelEntity || modelEntity.Mesh == null) continue;
-                
-                if (modelEntity.Mesh.Alpha)
+                foreach (var entity in renderer.Model.Entities)
                 {
-                    _alphaMeshes.Add(modelEntity.Mesh);
-                    continue;
+                    if (entity is not ModelEntity modelEntity || modelEntity.Mesh == null) continue;
+
+                    if (modelEntity.Mesh.Alpha)
+                    {
+                        _alphaMeshes.Add(modelEntity.Mesh);
+                        continue;
+                    }
+
+                    DrawObject(factory, modelEntity.Mesh, renderer.Parent);
                 }
-                DrawObject(factory, modelEntity.Mesh, renderer.Parent);
             }
-           
+
             // For objects that contain transparency we switch to a pipeline that does not cull backfaces
             // This prevents the back of glass from being culled, with the added benefit that glass does 
             // not prevent other faces from rendering
@@ -404,7 +443,7 @@ static class Sigrun
         for (int j = 0; j < vertexArray.Length; j++)
         {
             var vert = mesh.Vertices[j];
-            vertexArray[j] = new VertexPositionTexture(vert.Position * obj.Scale, vert.Uv, vert.Alpha);
+            vertexArray[j] = new VertexPositionTexture(vert.Position * obj.Scale, vert.Uv, vert.Normal, vert.Alpha);
         }
             
         _graphicsDevice.UpdateBuffer(_vertexBuffer, 0, vertexArray);
@@ -425,7 +464,7 @@ static class Sigrun
         //         _graphicsDevice.Aniso4xSampler));
         // _commandList.SetGraphicsResourceSet(2, _textureSet);
 
-        _textureSet = TextureHandler.GetTextureSet(mesh.Textures);
+        _textureSet = TextureHandler.GetTextureSet(mesh.Texture);
         
         _commandList.SetGraphicsResourceSet(2, _textureSet);
 
@@ -450,7 +489,7 @@ static class Sigrun
 
 struct VertexPositionTexture
 {
-    public const uint SizeInBytes = 24;
+    public const uint SizeInBytes = 36;
     public float PosX;
     public float PosY;
     public float PosZ;
@@ -458,15 +497,24 @@ struct VertexPositionTexture
     public float TexU;
     public float TexV;
 
+    public float NormalX;
+    public float NormalY;
+    public float NormalZ;
+    
     public float Alpha;
+    
 
-    public VertexPositionTexture(Vector3 pos, Vector2 uv, float alpha)
+
+    public VertexPositionTexture(Vector3 pos, Vector2 uv, Vector3 normal, float alpha)
     {
         PosX = pos.X;
         PosY = pos.Y;
         PosZ = pos.Z;
         TexU = uv.X;
         TexV = uv.Y;
+        NormalX = normal.X;
+        NormalY = normal.Y;
+        NormalZ = normal.Z;
         Alpha = alpha;
     }
 }

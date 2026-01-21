@@ -75,7 +75,7 @@ public class RMeshLoader
         {
             Indices = _vertexIndices.ToArray(),
             Name = _name,
-            Textures = _texturePaths.ToArray(),
+            Texture = _texturePaths.ToArray(),
             Vertices = _textureVertices.ToArray()
         };
         
@@ -201,7 +201,7 @@ public class RMeshLoader
         {
             Indices = _vertexIndices.ToArray(),
             Name = _name,
-            Textures = _texturePaths.ToArray(),
+            Texture = _texturePaths.ToArray(),
             Vertices = _textureVertices.ToArray()
         };
 

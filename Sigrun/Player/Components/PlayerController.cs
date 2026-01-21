@@ -11,7 +11,6 @@ public class PlayerController : Component
     
     public float Speed { get; set; } = 25f;
     public float Sensitivity { get; set; } = 0.1f;
-    public float Zoom { get; set; } = 45f ;
     
     
     public PlayerController(GameObject parent, Camera camera) : base(parent)

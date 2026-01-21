@@ -2,10 +2,12 @@
 
 layout(location = 0) in vec3 Position;
 layout(location = 1) in vec2 Color;
-layout(location = 2) in float in_alpha;
+layout(location = 2) in vec3 Normal;
+layout(location = 3) in float in_alpha;
 
 layout(location = 0) out vec2 fsin_texCoords;
-layout(location = 1) out float fsin_alpha;
+layout(location = 1) out vec3 fsin_normal;
+layout(location = 2) out float fsin_alpha;
 
 
 layout(std140, set = 0, binding = 0) uniform ProjectionBuffer
@@ -34,4 +36,5 @@ void main()
     gl_Position = clipPosition;
     fsin_texCoords = Color;
     fsin_alpha = in_alpha;
+    fsin_normal = Normal;
 }

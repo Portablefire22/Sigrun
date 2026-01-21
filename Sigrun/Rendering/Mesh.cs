@@ -4,7 +4,7 @@ public class Mesh
 {
    public MeshVertex[] Vertices;
    public ushort[] Indices;
-   public string Textures;
-   public string Name;
+   public string Texture = "";
+   public string Name = "";
    public bool Alpha;
 }

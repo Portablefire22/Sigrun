@@ -79,7 +79,7 @@ private FileStream _fileStream;
             {
                 Indices = _textureIndices[j],
                 Name = $"{_name}_{_texturePaths[j]}",
-                Textures = _texturePaths[j],
+                Texture = _texturePaths[j],
                 Vertices = _textureVertices[j],
                 Alpha = _texturePaths[j].Contains("glass")
             };
