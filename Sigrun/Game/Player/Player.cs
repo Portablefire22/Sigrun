@@ -6,7 +6,7 @@ namespace Sigrun.Game.Player;
 
 public class Player : GameObject
 {
-    public Camera Camera { get; set; }
+    public CameraComponent CameraComponent { get; set; }
     public PlayerController PlayerController { get; set; }
     
     private float _cameraOffset = 1.75f;
@@ -19,9 +19,9 @@ public class Player : GameObject
         Rotation = rotation;
 
         
-        Camera = new Camera(this, _cameraOffset);
-        PlayerController = new PlayerController(this, Camera);
-        Components.AddRange(Camera, PlayerController);
+        CameraComponent = new CameraComponent(this, _cameraOffset);
+        PlayerController = new PlayerController(this, CameraComponent);
+        Components.AddRange(CameraComponent, PlayerController);
     }
 
 }

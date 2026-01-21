@@ -1,15 +1,21 @@
 ﻿using System.Numerics;
 using Sigrun.Engine.Entity;
 using Sigrun.Engine.Entity.Components;
+using Sigrun.Engine.Rendering;
 
 namespace Sigrun.Game.Player.Components;
 
-public class Camera : Component
+public class CameraComponent : Component, ICamera
 {
-    public Vector3 Position => Parent.Position + Vector3.UnitY * Offset;
+    public Vector3 Position
+    {
+        get => Parent.Position + Vector3.UnitY * Offset;
+        set => Parent.Position = value - Vector3.UnitY * Offset;
+    }
+
     public float Offset;
     
-    public Camera(GameObject parent, float offset) : base(parent)
+    public CameraComponent(GameObject parent, float offset) : base(parent)
     {
         Offset = offset;
         WorldUp = new Vector3(0, 1,0);
@@ -22,9 +28,9 @@ public class Camera : Component
     public float ZNear { get; set; } = 0.1f;
     public float Fov { get; set; } = 100;
     
-    public Vector3 Front { get; private set; }
-    public Vector3 Up { get; private set; }
-    public Vector3 Right { get; private set; }
+    public Vector3 Front { get; set; }
+    public Vector3 Up { get; set; }
+    public Vector3 Right { get; set; }
     public Vector3 WorldUp { get; }
     
     public Matrix4x4 ViewMatrix => Matrix4x4.CreateLookAt(Position, Position + Front, Up);

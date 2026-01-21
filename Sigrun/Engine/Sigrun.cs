@@ -10,9 +10,11 @@ using Sigrun.Engine.Logging;
 using Sigrun.Engine.Rendering;
 using Sigrun.Engine.Rendering.Entities;
 using Sigrun.Engine.Rendering.Primitives;
+using Sigrun.Engine.Scenes;
 using Sigrun.Engine.Time;
 using Sigrun.Game.Player;
 using Sigrun.Game.Player.Components;
+using Sigrun.Game.Scenes;
 using Veldrid;
 using Veldrid.Sdl2;
 using Veldrid.SPIRV;
@@ -57,17 +59,18 @@ static class Sigrun
 
     private static bool _mouseCaptured = true;
     
-    private static Camera _mainCamera;
+    private static ICamera _mainCamera;
 
     private static DateTime _lastFixedUpdate = DateTime.Now;
     private static float _fixedUpdateMillis = 20;
 
-    private static Player _player = new ();
-
+    private static Scene _currentScene;
+    private static List<Scene> _scenes = [];
+    
     private static ILogger _logger = LoggingProvider.NewLogger("Sigrun.Engine.Sigrun");
 
     
-    private static List<GameObject> _gameObjects = [];
+    private static List<GameObject> _gameObjects => _currentScene.Objects;
     private static List<Collider> _colliders = [];
     
     public static void Start()
@@ -104,42 +107,7 @@ static class Sigrun
             _imGuiRenderer.WindowResized(_window.Width, _window.Height);
             _graphicsDevice.MainSwapchain.Resize((uint)_window.Width, (uint)_window.Height);
         };
-
-        _mainCamera = _player.Camera;
         
-        SpawnObject(_player);
-
-        // var obj1 = GameObject.FromModelFile("Assets/Models/4tunnels.rmesh", "4tunnel");
-        // var obj2 = GameObject.FromModelFile("Assets/Models/173.rmesh", "173");
-        // obj2.Scale = 0.005f;
-        // obj1.Scale = 0.0005f;
-        // obj2.Position -= Vector3.UnitY * 25f;
-        //
-        // var rigidbody = new Rigidbody(obj2) {Collider = new BoxCollider(obj2) };
-        // obj2.Components.Add(rigidbody);
-        
-        var obj2 = new GameObject();
-        
-        var mod = new Model() { Meshes = [new CubeMesh(new Vector3(2))] };
-        var rigidbody = new Rigidbody(obj2) {Collider = new BoxCollider(obj2) };
-        var renderer = new Renderer(obj2, mod);
-        obj2.Components.Add(renderer);
-        obj2.Components.Add(rigidbody);
-        obj2.Position += new Vector3(3, 0, 0);
-
-        var obj3 = new GameObject();
-        
-        var mod2 = new Model() { Meshes = [new CubeMesh(new Vector3(2))] };
-        var rigidbody2 = new Rigidbody(obj2) {Collider = new BoxCollider(obj3) };
-        var renderer2 = new Renderer(obj3, mod2);
-        obj3.Components.Add(renderer2);
-        obj3.Components.Add(rigidbody2);
-
-        rigidbody.Collider.Intersects(rigidbody2.Collider);
-        
-        SpawnObject(obj2);
-        SpawnObject(obj3);
-
         Sdl2Native.SDL_SetHint("SDL_MOUSE_RELATIVE_MODE_CENTER", "1");
         
         DateTime timer;
@@ -170,6 +138,12 @@ static class Sigrun
                 _mouseCaptured = !_mouseCaptured;
                 CaptureMouse(_mouseCaptured);
                 break;
+            case (Key.Number1):
+                ChangeScene(_scenes[0]);
+                break;
+            case (Key.Number2):
+                ChangeScene(_scenes[1]);
+                break;
         } 
     }
 
@@ -185,6 +159,24 @@ static class Sigrun
         {
            objComponent.Startup(); 
         }
+    }
+
+    public static void SetMainCamera(ICamera camera)
+    {
+        _mainCamera = camera;
+    }
+
+    public static void AddScene(Scene scene)
+    {
+        _scenes.Add(scene);
+        if (_scenes.Count == 1) ChangeScene(scene);
+    }
+    
+    public static void ChangeScene(Scene scene)
+    {
+        _renderables.Clear();
+        _currentScene = scene;
+        ObjectStartup();  
     }
     
     private static void Update()
@@ -245,7 +237,6 @@ static class Sigrun
     {
         foreach (var obj in _gameObjects)
         {
-            if (obj.Components == null) continue;
             foreach (var comp in obj.Components)
             {
                 comp.Startup();
@@ -288,8 +279,8 @@ static class Sigrun
             new VertexElementDescription("Normal", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float3),
             new VertexElementDescription("Alpha", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float1));
 
-        var vertexCode = File.ReadAllText("Shader/shader.vert").ReplaceLineEndings();
-        var fragmentCode= File.ReadAllText("Shader/shader.frag").ReplaceLineEndings();
+        var vertexCode = File.ReadAllText("Engine/Shader/shader.vert").ReplaceLineEndings();
+        var fragmentCode= File.ReadAllText("Engine/Shader/shader.frag").ReplaceLineEndings();
 
         var vertexShaderDesc = new ShaderDescription(ShaderStages.Vertex, Encoding.UTF8.GetBytes(vertexCode), "main");
         var fragmentShaderDesc = new ShaderDescription(ShaderStages.Fragment, Encoding.UTF8.GetBytes(fragmentCode), "main");

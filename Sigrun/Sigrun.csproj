@@ -23,12 +23,20 @@
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </Content>
       <Compile Remove="Rendering\Loader\RMeshLoader.cs" />
-      <None Include="Engine\Rendering\Loader\RMeshLoader.cs" />
     </ItemGroup>
 
     <ItemGroup>
       <Folder Include="Assets\Textures\" />
       <Folder Include="Game\World\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="Engine\Shader\shader.frag">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="Engine\Shader\shader.vert">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
 </Project>
