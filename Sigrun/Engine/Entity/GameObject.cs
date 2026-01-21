@@ -1,6 +1,6 @@
 ﻿using System.Numerics;
 using Sigrun.Engine.Entity.Components;
-using Sigrun.Rendering.Loader;
+using Sigrun.Engine.Rendering.Loader;
 
 namespace Sigrun.Engine.Entity;
 

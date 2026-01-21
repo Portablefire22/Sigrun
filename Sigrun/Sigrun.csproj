@@ -19,21 +19,16 @@
     </ItemGroup>
 
     <ItemGroup>
-      <None Update="Shader\shader.frag">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
-      <None Update="Shader\shader.vert">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
       <Content Include="Assets\**\*">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </Content>
       <Compile Remove="Rendering\Loader\RMeshLoader.cs" />
-      <None Include="Rendering\Loader\RMeshLoader.cs" />
+      <None Include="Engine\Rendering\Loader\RMeshLoader.cs" />
     </ItemGroup>
 
     <ItemGroup>
       <Folder Include="Assets\Textures\" />
+      <Folder Include="Game\World\" />
     </ItemGroup>
 
 </Project>

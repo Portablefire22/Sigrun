@@ -1,5 +1,4 @@
-﻿using Sigrun.Logging;
-using Sigrun.Rendering;
+﻿using Sigrun.Engine.Rendering;
 
 namespace Sigrun.Engine.Entity.Components;
 
