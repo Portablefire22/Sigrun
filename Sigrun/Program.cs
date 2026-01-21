@@ -8,9 +8,9 @@ public class Program
     {
         var s = new DebugScene();
         var r = new RoomScene();
+        var wg = new WorldgenScene();
         
-        Engine.Sigrun.AddScene(s);
-        Engine.Sigrun.AddScene(r);
+        Engine.Sigrun.AddScenes(wg,r,s); 
         
         Engine.Sigrun.Start();
         Engine.Sigrun.Dispose();

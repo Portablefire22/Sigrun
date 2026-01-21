@@ -24,6 +24,11 @@ public abstract class Component
     /// Called as soon as the component is created.
     /// </summary>
     public virtual void Startup(){}
+
+    protected void SpawnObject(GameObject gameObject)
+    {
+        Sigrun.SpawnObject(gameObject);
+    }
     
     public GameObject Parent { get; private set; }
 }

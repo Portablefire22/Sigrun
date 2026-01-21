@@ -11,13 +11,10 @@ public class RoomScene : Scene
 
    public RoomScene()
    {
-      var player = new Player.Player();
-      SpawnObject(player);
-      
-      var obj1 = GameObject.FromModelFile("Assets/Models/4tunnels.rmesh", "4tunnel");
-      var obj2 = GameObject.FromModelFile("Assets/Models/173.rmesh", "173");
-      obj2.Scale = 0.005f;
-      obj1.Scale = 0.0005f;
+      var obj1 = GameObject.FromRMeshFile("Assets/Models/4tunnels.rmesh", "4tunnel");
+      var obj2 = GameObject.FromRMeshFile("Assets/Models/173.rmesh", "173");
+      obj2.Scale = new Vector3(0.005f);
+      obj1.Scale = new Vector3(0.0005f);
       obj2.Position -= Vector3.UnitY * 25f;
       
       var rigidbody = new Rigidbody(obj2) {Collider = new BoxCollider(obj2) };

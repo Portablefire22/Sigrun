@@ -41,11 +41,11 @@ static class Sigrun
     private static ResourceSet _textureSet;
 
     private static List<Mesh> _alphaMeshes = [];
-    
+
     private static uint _indexCount;
 
     private static ImGuiRenderer _imGuiRenderer;
-    
+
     private static Shader[] _shaders;
     private static Pipeline _pipeline;
     private static Pipeline _alphaPipeline;
@@ -54,11 +54,11 @@ static class Sigrun
 
     private static float _ticks;
     private static InputSnapshot _inputSnapshot;
-    
+
     private static Sdl2Window _window;
 
     private static bool _mouseCaptured = true;
-    
+
     private static ICamera _mainCamera;
 
     private static DateTime _lastFixedUpdate = DateTime.Now;
@@ -66,13 +66,13 @@ static class Sigrun
 
     private static Scene _currentScene;
     private static List<Scene> _scenes = [];
-    
+
     private static ILogger _logger = LoggingProvider.NewLogger("Sigrun.Engine.Sigrun");
 
-    
+
     private static List<GameObject> _gameObjects => _currentScene.Objects;
     private static List<Collider> _colliders = [];
-    
+
     public static void Start()
     {
         var windowCreateInfo = new WindowCreateInfo()
@@ -98,7 +98,7 @@ static class Sigrun
         _window.KeyDown += GlobalKeys;
         _window.KeyUp += InputState.OnKeyUp;
         _window.MouseMove += InputState.OnMouseMove;
-       
+
         _window.FocusGained += OnFocusGained;
         _window.FocusLost += OnFocusLost;
 
@@ -107,9 +107,9 @@ static class Sigrun
             _imGuiRenderer.WindowResized(_window.Width, _window.Height);
             _graphicsDevice.MainSwapchain.Resize((uint)_window.Width, (uint)_window.Height);
         };
-        
+
         Sdl2Native.SDL_SetHint("SDL_MOUSE_RELATIVE_MODE_CENTER", "1");
-        
+
         DateTime timer;
         while (_window.Exists)
         {
@@ -125,6 +125,7 @@ static class Sigrun
                 FixedUpdate();
                 diff -= 20;
             }
+
             TextureHandler.CreateSets(_graphicsDevice);
             Draw();
         }
@@ -132,19 +133,50 @@ static class Sigrun
 
     public static void GlobalKeys(KeyEvent e)
     {
-        switch (e.Key)
+        try
         {
-            case Key.Escape:
-                _mouseCaptured = !_mouseCaptured;
-                CaptureMouse(_mouseCaptured);
-                break;
-            case (Key.Number1):
-                ChangeScene(_scenes[0]);
-                break;
-            case (Key.Number2):
-                ChangeScene(_scenes[1]);
-                break;
-        } 
+            switch (e.Key)
+            {
+                case Key.Escape:
+                    _mouseCaptured = !_mouseCaptured;
+                    CaptureMouse(_mouseCaptured);
+                    break;
+                case (Key.Number1):
+                    ChangeScene(_scenes[0]);
+                    break;
+                case (Key.Number2):
+                    ChangeScene(_scenes[1]);
+                    break;
+                case (Key.Number3):
+                    ChangeScene(_scenes[2]);
+                    break;
+                case (Key.Number4):
+                    ChangeScene(_scenes[3]);
+                    break;
+                case (Key.Number5):
+                    ChangeScene(_scenes[4]);
+                    break;
+                case (Key.Number6):
+                    ChangeScene(_scenes[5]);
+                    break;
+                case (Key.Number7):
+                    ChangeScene(_scenes[6]);
+                    break;
+                case (Key.Number8):
+                    ChangeScene(_scenes[7]);
+                    break;
+                case (Key.Number9):
+                    ChangeScene(_scenes[8]);
+                    break;
+                case (Key.Number0):
+                    ChangeScene(_scenes[9]);
+                    break;
+            }
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError($"{exception}");
+        }
     }
 
     public static void CaptureMouse(bool shouldCapture)
@@ -157,13 +189,21 @@ static class Sigrun
         _gameObjects.Add(obj);
         foreach (var objComponent in obj.Components)
         {
-           objComponent.Startup(); 
+            objComponent.Startup();
         }
     }
 
     public static void SetMainCamera(ICamera camera)
     {
         _mainCamera = camera;
+    }
+
+    public static void AddScenes(params Scene[] scenes)
+    {
+        foreach (var scene in scenes)
+        {
+            AddScene(scene);
+        }
     }
 
     public static void AddScene(Scene scene)
@@ -235,7 +275,9 @@ static class Sigrun
 
     private static void ObjectStartup()
     {
-        foreach (var obj in _gameObjects)
+        var tempObjects = new GameObject[_gameObjects.Count];
+        _gameObjects.CopyTo(tempObjects);
+        foreach (var obj in tempObjects)
         {
             foreach (var comp in obj.Components)
             {
@@ -432,7 +474,8 @@ static class Sigrun
     {
         // Object translation
         var objectData = new GPUModel();
-        objectData.ModelMatrix = Matrix4x4.CreateTranslation(obj.Position);
+        var trans = Vector3.Transform(obj.Position, obj.Rotation.Quaternion);
+        objectData.ModelMatrix = Matrix4x4.CreateTranslation(trans);
         _commandList.UpdateBuffer(_worldBuffer, 0, ref objectData); 
 
         // Upload model to GPU for rendering 

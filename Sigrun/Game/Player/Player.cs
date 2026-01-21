@@ -1,5 +1,6 @@
 ﻿using System.Numerics;
 using Sigrun.Engine.Entity;
+using Sigrun.Engine.Rendering;
 using Sigrun.Game.Player.Components;
 
 namespace Sigrun.Game.Player;
@@ -16,7 +17,7 @@ public class Player : GameObject
     public Player(Vector3 position, Vector3 rotation)
     {
         Position = position;
-        Rotation = rotation;
+        Rotation = new Rotation(rotation);
 
         
         CameraComponent = new CameraComponent(this, _cameraOffset);
