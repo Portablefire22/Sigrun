@@ -627,7 +627,7 @@ public class MapGenerator : Component
 								room = CreateRoom( zone, RoomType.Room2,
 									new Vector2( x * _positionScaler, y * _positionScaler ), mapName );
 								if ( BlitzRng.BlitzRand( 1, 2 ) == 1 ) rot = Rotation.From( 0, 90f, 0 );
-								else rot = Rotation.From( 0, 270, 0 );
+								else rot = Rotation.From( 0, 0, 0 );
 								room.Rotation = rot;
 								mapRoomId[(int)RoomType.Room2]++;
 							} else if ( GetVerticalConnections( MapTemp, x, y ) == 2 )
@@ -737,7 +737,7 @@ public class MapGenerator : Component
 		isIntersecting = false;
 		if ( room.Tags.Contains( "room_room2" ) )
 		{
-			room.Rotation *= Rotation.From( 180, 0, 0 );
+			room.Rotation *= Rotation.From( 0,180, 0 );
 			foreach ( var r2 in SavedRooms )
 			{
 				if ( r2 != room && !r2.Tags.Contains( "disableOverlapCheck" ) )
@@ -746,7 +746,7 @@ public class MapGenerator : Component
 					{
 						// Rotating didnt work
 						isIntersecting = true;
-						room.Rotation *= Rotation.From(-180, 0, 0 );
+						room.Rotation *= Rotation.From(0, 180,  0 );
 						break;
 					}
 				}

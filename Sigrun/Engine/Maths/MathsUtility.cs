@@ -7,4 +7,13 @@ public static class MathsUtility
         var diff = Math.Abs(val1 - val2);
         return (diff <= tolerance);
     }
+    
+    public static double ToRadians(double val)
+    {
+        return (Math.PI / 180) * val;
+    }
+    public static float ToRadians(float val)
+    {
+        return (float)((Math.PI / 180) * val);
+    }
 }

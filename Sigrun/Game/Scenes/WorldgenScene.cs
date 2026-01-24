@@ -11,6 +11,6 @@ public class WorldgenScene : Scene
         var empty = new GameObject();
         var gen = new MapGenerator(empty);
         empty.Components.Add(gen);
-        SpawnObject(empty);
+        // SpawnObject(empty);
     }
 }

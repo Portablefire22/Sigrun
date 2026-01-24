@@ -1,11 +1,12 @@
 ﻿using System.Numerics;
 using System.Runtime.CompilerServices;
+using Sigrun.Engine.Maths;
 
 namespace Sigrun.Engine.Rendering;
 
 public class Rotation
 {
-    public Quaternion Quaternion { get; private set; } = new Quaternion();
+    public Quaternion Quaternion { get; private set; } = new Quaternion(0,0,0,1);
 
     public double Yaw => Math.Atan2(2.0 * (Quaternion.Y * Quaternion.Z + Quaternion.W * Quaternion.X),
         Quaternion.W * Quaternion.W - Quaternion.X * Quaternion.X - Quaternion.Y * Quaternion.Y +
@@ -17,16 +18,16 @@ public class Rotation
         Quaternion.W * Quaternion.W + Quaternion.X * Quaternion.X - Quaternion.Y * Quaternion.Y -
         Quaternion.Z * Quaternion.Z);
 
-    public Rotation(Vector3 angles)
-    {
-        Quaternion = Quaternion.CreateFromYawPitchRoll(angles.X, angles.Y, angles.Z);
-    }
+    public Rotation(Vector3 angles) : this(angles.X, angles.Y, angles.Z) {}
 
     public Rotation() { }
 
     public Rotation(float x, float y, float z)
     {
-        Quaternion = Quaternion.CreateFromYawPitchRoll(x, y, z);
+        Quaternion = Quaternion.CreateFromYawPitchRoll(
+            MathsUtility.ToRadians(y), 
+            MathsUtility.ToRadians(x), 
+            MathsUtility.ToRadians(z));
     }
 
     public Rotation(Quaternion quaternion)
@@ -45,6 +46,11 @@ public class Rotation
     }
 
     public static Rotation operator *(Rotation r1, Rotation r2)
+    {
+        return new Rotation(r1.Quaternion * r2.Quaternion);
+    }
+   
+    public static Rotation operator +(Rotation r1, Rotation r2) 
     {
         return new Rotation(r1.Quaternion * r2.Quaternion);
     }

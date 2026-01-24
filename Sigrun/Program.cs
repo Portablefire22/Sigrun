@@ -10,7 +10,7 @@ public class Program
         var r = new RoomScene();
         var wg = new WorldgenScene();
         
-        Engine.Sigrun.AddScenes(wg,r,s); 
+        Engine.Sigrun.AddScenes(r,s); 
         
         Engine.Sigrun.Start();
         Engine.Sigrun.Dispose();

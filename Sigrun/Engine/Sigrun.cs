@@ -474,8 +474,10 @@ static class Sigrun
     {
         // Object translation
         var objectData = new GPUModel();
-        var trans = Vector3.Transform(obj.Position, obj.Rotation.Quaternion);
-        objectData.ModelMatrix = Matrix4x4.CreateTranslation(trans);
+
+        // Apply rotation first to rotate around object origin and not world origin
+        objectData.ModelMatrix = Matrix4x4.CreateFromQuaternion(obj.Rotation.Quaternion);
+        objectData.ModelMatrix *= Matrix4x4.CreateTranslation(obj.Position);
         _commandList.UpdateBuffer(_worldBuffer, 0, ref objectData); 
 
         // Upload model to GPU for rendering 

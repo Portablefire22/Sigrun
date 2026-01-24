@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
 using Sigrun.Engine.Entity;
 using Sigrun.Engine.Entity.Components;
+using Sigrun.Engine.Maths;
 using Sigrun.Engine.Rendering;
 
 namespace Sigrun.Game.Player.Components;
@@ -37,7 +38,7 @@ public class CameraComponent : Component, ICamera
     public Matrix4x4 GetProjectionMatrix(float aspectRatio)
     {
         return Matrix4x4.CreatePerspectiveFieldOfView(
-                (float)ToRadians(Fov), 
+                (float)MathsUtility.ToRadians(Fov), 
                 aspectRatio,
                 ZNear,
                 ZFar);
@@ -47,9 +48,9 @@ public class CameraComponent : Component, ICamera
     {
         var front = new Vector3()
         {
-            X = (float)(Math.Cos(ToRadians(Yaw)) * Math.Cos(ToRadians(Pitch))),
-            Y = (float)Math.Sin(ToRadians(Pitch)),
-            Z = (float)(Math.Sin(ToRadians(Yaw)) * Math.Cos(ToRadians(Pitch))),
+            X = (float)(Math.Cos(MathsUtility.ToRadians(Yaw)) * Math.Cos(MathsUtility.ToRadians(Pitch))),
+            Y = (float)Math.Sin(MathsUtility.ToRadians(Pitch)),
+            Z = (float)(Math.Sin(MathsUtility.ToRadians(Yaw)) * Math.Cos(MathsUtility.ToRadians(Pitch))),
         };
         Front = Vector3.Normalize(front);
 
@@ -57,10 +58,7 @@ public class CameraComponent : Component, ICamera
         Up = Vector3.Normalize(Vector3.Cross(Right, Front));
     }
 
-    private double ToRadians(float val)
-    {
-        return (Math.PI / 180) * val;
-    }
+
 }
 
 enum Movement  
