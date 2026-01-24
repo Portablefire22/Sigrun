@@ -71,6 +71,7 @@ static class Sigrun
 
 
     private static List<GameObject> _gameObjects => _currentScene.Objects;
+    private static int _drawnMeshes = 0;
     private static List<Collider> _colliders = [];
 
     public static void Start()
@@ -414,7 +415,8 @@ static class Sigrun
         ImGui.Text($"FPS: {TimeHandler.FramesPerSecond}");
         ImGui.Text($"FrameTime: {TimeHandler.FrameTime}ms");
         ImGui.Text($"Camera Pos: {_mainCamera.Position.X} {_mainCamera.Position.Y} {_mainCamera.Position.Z}");
-        ImGui.Text($"Num of Meshes to render: {_renderables.Count}");
+        ImGui.Text($"Num of Models to render: {_renderables.Count}");
+        ImGui.Text($"Num of Drawn Meshes: {_drawnMeshes}");
         
         DrawObjects();
         
@@ -428,6 +430,7 @@ static class Sigrun
     public static void DrawObjects()
     {
         var factory = _graphicsDevice.ResourceFactory;
+        _drawnMeshes = 0;
         foreach (var renderer in _renderables)
         {
             foreach (var mesh in renderer.Model.Meshes)
@@ -519,6 +522,7 @@ static class Sigrun
         _commandList.DrawIndexed((uint)mesh.Indices.Length);
         _vertexBuffer.Dispose();
         _indexBuffer.Dispose();
+        _drawnMeshes++;
     }
     
     public static void Dispose()
