@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using System.Runtime.InteropServices;
 using System.Text;
 using ImGuiNET;
 using Microsoft.Extensions.Logging;
@@ -91,7 +92,15 @@ static class Sigrun
             PreferStandardClipSpaceYDirection = true,
             SwapchainDepthFormat = PixelFormat.R16_UNorm
         };
-        _graphicsDevice = VeldridStartup.CreateGraphicsDevice(_window, options);
+        // MacOS has some strange metal issues
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+        {
+            _graphicsDevice = VeldridStartup.CreateDefaultOpenGLGraphicsDevice(options, _window, GraphicsBackend.OpenGL);
+        }
+        else
+        {
+            _graphicsDevice = VeldridStartup.CreateGraphicsDevice(_window, options);
+        }
 
         CreateResources();
 
@@ -182,7 +191,7 @@ static class Sigrun
 
     public static void CaptureMouse(bool shouldCapture)
     {
-        Sdl2Native.SDL_SetRelativeMouseMode(shouldCapture);
+        //Sdl2Native.SDL_SetRelativeMouseMode(shouldCapture);
     }
 
     public static void SpawnObject(GameObject obj)
